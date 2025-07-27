@@ -1,0 +1,61 @@
+{
+  "name": "minecraft-bedrock-glyph-viewer",
+  "displayName": "Minecraft Bedrock Glyph Viewer",
+  "description": "Відображає Unicode символи як картинки з шрифтових файлів та конвертує їх",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.102.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "fontcode.convertToUnicode",
+        "title": "Convert Font Code to Unicode"
+      },
+      {
+        "command": "fontcode.showEmojiPicker",
+        "title": "Show Emoji Picker"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "fontcode.convertToUnicode",
+        "key": "ctrl+shift+u",
+        "mac": "cmd+shift+u",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "fontcode.showEmojiPicker",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.102.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2"
+  },
+  "dependencies": {
+    "sharp": "^0.32.6"
+  }
+}
