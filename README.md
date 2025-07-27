@@ -21,14 +21,20 @@ A VS Code extension to display Unicode symbols in the `0xEyyy` format as images 
 
 ## 📝 Usage Example
 
-```json
-{
-  "text": "Press 0xE001 to open the menu or ",
-  "font": "custom_font"
-}
-```
+By selecting text like `0xEyyy`, you can quickly convert it into a Unicode character using a key combination.
+You’ll also see a matching icon appear next to the code. Hovering over the character shows additional information and a zoomed-in version of the icon.
 
-**Result**: The code `0xE001` and the symbol \`\` will be displayed as images from the file `glyph_E0.png`, cell at row 0, column 1.
+![Ctrl + Shift + E](./images/img_2.png)
+
+You can also open a menu that lists all available fonts located in the `font` folder.
+
+![Ctrl + Shift + E](./images/img_1.png)
+
+Right-click to insert the selected emoji into the file.
+Left-click to copy the code or Unicode character.
+You can also choose which font file to use and what size the emojis should be displayed.
+
+![Ctrl + Shift + E](./images/img_3.png)
 
 ## ⌨️ Commands and Keybindings
 
@@ -96,14 +102,20 @@ VS Code розширення для відображення Unicode симво�
 
 ## 📝 Приклад використання
 
-```json
-{
-  "text": "Натисніть 0xE001 щоб відкрити меню або ",
-  "font": "custom_font"
-}
-```
+Виділивши текст типу `0xEyyy`, за допомогою комбінації клавіш ви можете швидко конвертувати його в Unicode-символ.
+Також ви побачите, як поруч із кодом з’являється відповідна іконка. Навівши курсор на символ, ви зможете переглянути більше інформації про нього та побачити збільшену версію іконки.
 
-**Результат**: Код `0xE001` та символ `` будуть відображені з картинками з файлу `glyph_E0.png`, клітинка в рядку 0, стовпці 1.
+![Ctrl + Shift + E](./images/img_2.png)
+
+Ви також можете відкрити меню, у якому буде перелік усіх шрифтів, що знаходяться в папці `font`.
+
+![Ctrl + Shift + E](./images/img_1.png)
+
+ПКМ — вставити потрібний емодзі у файл.
+ЛКМ — скопіювати код або Unicode-символ.
+Також можна обрати, з якого файлу брати емодзі, і в якому розмірі їх відображати.
+
+![Ctrl + Shift + E](./images/img_3.png)
 
 ## ⌨️ Команди та комбінації клавіш
 
