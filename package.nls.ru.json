@@ -1,0 +1,14 @@
+{
+  "extension.displayName": "Просмотр глифов Minecraft Bedrock",
+  "extension.description": "Отображает Unicode-символы как изображения из шрифта и преобразует их",
+  "command.convertToUnicode.title": "Преобразовать код шрифта в Unicode",
+  "command.showEmojiPicker.title": "Открыть панель эмодзи",
+  "properties.hoverMinSize": "Минимальный размер при наведении",
+  "properties.hoverMaxSize": "Максимальный размер при наведении",
+  "properties.maxHeight": "Максимальная высота",
+  "configuration.language.description": "Язык интерфейса расширения",
+  "configuration.language.auto": "Автоматически (как в VS Code)",
+  "configuration.language.en": "Английский",
+  "configuration.language.uk": "Украинский",
+  "configuration.language.ru": "Русский"
+}

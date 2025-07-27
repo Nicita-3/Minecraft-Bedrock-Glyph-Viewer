@@ -87,13 +87,13 @@ export class FontCodeManager {
 
     for (const { code, range } of codeMatches) {
       decorationPromises.push(
-        this.addDecorationForCode(code, range, decorationsArray)
+        this.addDecorationForCode(code, range, decorationsArray, false)
       );
     }
 
     for (const { code, range } of unicodeMatches) {
       decorationPromises.push(
-        this.addDecorationForCode(code, range, decorationsArray)
+        this.addDecorationForCode(code, range, decorationsArray, false)
       );
     }
 
@@ -105,7 +105,7 @@ export class FontCodeManager {
         ),
       ]);
     } catch (error) {
-      console.warn("Деякі декорації не вдалося завантажити вчасно:", error);
+      console.warn(vscode.l10n.t('fontCodeManager.decorationsLoadTimeoutWarning'), error);
     }
 
     editor.setDecorations(this.decorationType, decorationsArray);
@@ -134,10 +134,11 @@ export class FontCodeManager {
   private async addDecorationForCode(
     fontCode: string,
     range: vscode.Range,
-    decorationsArray: vscode.DecorationOptions[]
+    decorationsArray: vscode.DecorationOptions[],
+    isForHover: boolean
   ) {
     try {
-      const imageUri = await this.getImageForCode(fontCode);
+      const imageUri = await this.getImageForCode(fontCode, isForHover);
       if (imageUri) {
         const decoration: vscode.DecorationOptions = {
           range,
@@ -151,11 +152,11 @@ export class FontCodeManager {
         decorationsArray.push(decoration);
       }
     } catch (error) {
-      console.error(`Помилка обробки ${fontCode}:`, error);
+      console.error(vscode.l10n.t('fontCodeManager.codeProcessingError', fontCode), error);
     }
   }
 
-  private async getImageForCode(fontCode: string): Promise<vscode.Uri | null> {
+  private async getImageForCode(fontCode: string, isForHover: boolean = false): Promise<vscode.Uri | null> {
     try {
       const code = fontCode.substring(2);
       const prefix = code.substring(0, 2);
@@ -173,10 +174,11 @@ export class FontCodeManager {
         pngPath,
         row,
         col,
-        fontCode
+        fontCode,
+        isForHover
       );
     } catch (error) {
-      console.error(`Помилка отримання зображення для ${fontCode}:`, error);
+      console.error(vscode.l10n.t('fontCodeManager.imageRetrievalError', fontCode), error);
       return null;
     }
   }
@@ -249,7 +251,7 @@ export class FontCodeManager {
   }
 
   async getImageForHover(fontCode: string): Promise<vscode.Uri | null> {
-    return this.getImageForCode(fontCode);
+    return this.getImageForCode(fontCode, true); // Передаємо true для hover
   }
 
   dispose() {

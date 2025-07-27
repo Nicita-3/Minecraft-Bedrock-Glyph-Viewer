@@ -2,11 +2,15 @@ import * as vscode from "vscode";
 import { FontCodeManager } from "./fontCodeManager";
 import { FontCodeHoverProvider } from "./hoverProvider";
 import { EmojiPicker } from "./emojiPicker";
+import { LocaleManager } from "./localeManager";
 
 let fontCodeManager: FontCodeManager;
 let emojiPicker: EmojiPicker;
+let localeManager: LocaleManager;
 
 export function activate(context: vscode.ExtensionContext) {
+  localeManager = new LocaleManager(context);
+  
   fontCodeManager = new FontCodeManager(context);
   emojiPicker = new EmojiPicker(context, fontCodeManager);
 
@@ -51,11 +55,15 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  context.subscriptions.push({
+    dispose: () => localeManager.dispose()
+  });
+
   fontCodeManager.updateDecorations();
 
-  vscode.window.showInformationMessage(
-    "Font Code Unicode Viewer активовано! Використовуйте Ctrl+Shift+E для відкриття Emoji Picker."
-  );
+//   vscode.window.showInformationMessage(
+//     vscode.l10n.t('extension.activated')
+//   );
 }
 
 function convertSelectedTextToUnicode() {
@@ -75,9 +83,9 @@ function convertSelectedTextToUnicode() {
       /0xE[0-9A-F]{3}/i
     );
     if (!wordRange) {
-      vscode.window.showInformationMessage(
-        "Не знайдено коди шрифтів для конвертації"
-      );
+    //   vscode.window.showInformationMessage(
+    //     vscode.l10n.t('convert.noFontCodesFound')
+    //   );
       return;
     }
     text = editor.document.getText(wordRange);
@@ -91,9 +99,9 @@ function convertSelectedTextToUnicode() {
   const matches = text.match(regex);
 
   if (!matches) {
-    vscode.window.showInformationMessage(
-      "Не знайдено коди шрифтів для конвертації"
-    );
+    // vscode.window.showInformationMessage(
+    //   vscode.l10n.t('convert.noFontCodesFound')
+    // );
     return;
   }
 
@@ -104,7 +112,7 @@ function convertSelectedTextToUnicode() {
       const unicodeChar = String.fromCharCode(codePoint);
       convertedText = convertedText.replace(match, unicodeChar);
     } catch (error) {
-      console.error(`Помилка конвертації ${match}:`, error);
+      console.error(`Error converting ${match}:`, error);
     }
   });
 
@@ -113,7 +121,7 @@ function convertSelectedTextToUnicode() {
   });
 
   vscode.window.showInformationMessage(
-    `Конвертовано ${matches.length} символів`
+    vscode.l10n.t('convert.success', matches.length)
   );
 }
 
@@ -123,5 +131,8 @@ export function deactivate() {
   }
   if (emojiPicker) {
     emojiPicker.dispose();
+  }
+  if (localeManager) {
+    localeManager.dispose();
   }
 }

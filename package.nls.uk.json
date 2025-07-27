@@ -1,0 +1,14 @@
+{
+  "extension.displayName": "Minecraft Bedrock Glyph Viewer",
+  "extension.description": "Відображає Unicode символи як картинки з шрифтових файлів та конвертує їх",
+  "command.convertToUnicode.title": "Конвертувати код шрифту в Unicode",
+  "command.showEmojiPicker.title": "Показати вибір емодзі",
+  "properties.hoverMinSize": "Мінімальний розмір при наведенні",
+  "properties.hoverMaxSize": "Максимальний розмір при наведенні",
+  "properties.maxHeight": "Максимальна висота",
+  "configuration.language.description": "Мова інтерфейсу розширення",
+  "configuration.language.auto": "Автоматично (як у VS Code)",
+  "configuration.language.en": "Англійська",
+  "configuration.language.uk": "Українська",
+  "configuration.language.ru": "Російська"
+}

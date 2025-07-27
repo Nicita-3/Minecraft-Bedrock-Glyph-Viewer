@@ -1,8 +1,19 @@
 {
   "name": "minecraft-bedrock-glyph-viewer",
-  "displayName": "Minecraft Bedrock Glyph Viewer",
-  "description": "Відображає Unicode символи як картинки з шрифтових файлів та конвертує їх",
-  "version": "1.0.0",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
+  "icon": "icon.png",
+  "publisher": "Nicita3",
+  "author": {
+    "name": "Nicita3",
+    "url": "https://github.com/Nicita-3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nicita-3/Minecraft-Bedrock-Glyph-Viewer"
+  },
+  "version": "1.1.0",
+  "l10n": "./l10n",
   "engines": {
     "vscode": "^1.102.0"
   },
@@ -13,15 +24,55 @@
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
+  "properties": {
+    "glyphViewer.language": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "en",
+        "uk",
+        "ru"
+      ],
+      "enumDescriptions": [
+        "%configuration.language.auto%",
+        "%configuration.language.en%",
+        "%configuration.language.uk%",
+        "%configuration.language.ru%"
+      ],
+      "default": "auto",
+      "description": "%configuration.language.description%"
+    },
+    "glyphViewer.hoverMinSize": {
+      "type": "number",
+      "default": 32,
+      "minimum": 16,
+      "maximum": 512,
+      "description": "%properties.hoverMinSize%"
+    },
+    "glyphViewer.hoverMaxSize": {
+      "type": "number",
+      "default": 64,
+      "minimum": 16,
+      "maximum": 512,
+      "description": "%properties.hoverMaxSize%"
+    },
+    "glyphViewer.maxHeight": {
+      "type": "number",
+      "default": 14,
+      "minimum": 8,
+      "maximum": 32,
+      "description": "%properties.maxHeight%"
+    }
+  },
   "contributes": {
     "commands": [
       {
         "command": "fontcode.convertToUnicode",
-        "title": "Convert Font Code to Unicode"
+        "title": "%command.convertToUnicode.title%"
       },
       {
         "command": "fontcode.showEmojiPicker",
-        "title": "Show Emoji Picker"
+        "title": "%command.showEmojiPicker.title%"
       }
     ],
     "keybindings": [
@@ -40,20 +91,24 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "vscode:prepublish": "npm run l10n-dev:generate && npm run compile",
+    "l10n-dev:generate": "npx @vscode/l10n-dev export --outDir ./l10n ./src",
+    "vsce": "vsce package"
   },
   "devDependencies": {
-    "@types/vscode": "^1.102.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/vscode": "^1.102.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
-    "typescript": "^5.8.3",
+    "@vscode/l10n-dev": "^0.0.35",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "sharp": "^0.32.6"

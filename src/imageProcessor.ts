@@ -3,11 +3,15 @@ import sharp from "sharp";
 import * as path from "path";
 import * as fs from "fs";
 
+const config = vscode.workspace.getConfiguration('glyphViewer');
+
 export class ImageProcessor {
   private cache: Map<string, vscode.Uri> = new Map();
   private processingCache: Map<string, Promise<vscode.Uri | null>> = new Map();
   private cacheDir: string;
-  private readonly MAX_HEIGHT = 14;
+  private readonly MAX_HEIGHT = config.get<number>('maxHeight') ?? 14;
+  private readonly HOVER_MIN_SIZE = config.get<number>('hoverMinSize') ?? 32;
+  private readonly HOVER_MAX_SIZE = config.get<number>('hoverMaxSize') ?? 64;
 
   constructor(private context: vscode.ExtensionContext) {
     this.cacheDir = path.join(context.globalStorageUri.fsPath, "glyphCache");
@@ -24,9 +28,11 @@ export class ImageProcessor {
     pngPath: string,
     row: number,
     col: number,
-    fontCode: string
+    fontCode: string,
+    isForHover: boolean = false
   ): Promise<vscode.Uri | null> {
-    const cacheKey = `${path.basename(pngPath)}_${row}_${col}_v2`;
+    const suffix = isForHover ? "_hover" : "_inline";
+    const cacheKey = `${path.basename(pngPath)}_${row}_${col}${suffix}_v3`;
 
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!;
@@ -36,7 +42,7 @@ export class ImageProcessor {
       return this.processingCache.get(cacheKey)!;
     }
 
-    const processingPromise = this.processImage(pngPath, row, col, cacheKey);
+    const processingPromise = this.processImage(pngPath, row, col, cacheKey, isForHover);
     this.processingCache.set(cacheKey, processingPromise);
 
     try {
@@ -56,7 +62,8 @@ export class ImageProcessor {
     pngPath: string,
     row: number,
     col: number,
-    cacheKey: string
+    cacheKey: string,
+    isForHover: boolean
   ): Promise<vscode.Uri | null> {
     try {
       const cachePath = path.join(this.cacheDir, `${cacheKey}.png`);
@@ -68,7 +75,7 @@ export class ImageProcessor {
       const metadata = await originalImage.metadata();
 
       if (!metadata.width || !metadata.height) {
-        throw new Error("Не вдалося отримати розміри зображення");
+        throw new Error(vscode.l10n.t('imageProcessor.imageDimensionsError'));
       }
 
       const cellWidth = Math.floor(metadata.width / 16);
@@ -92,7 +99,7 @@ export class ImageProcessor {
         return null;
       }
 
-      const processedBuffer = await this.trimAndOptimizeImage(extractedBuffer);
+      const processedBuffer = await this.trimAndOptimizeImage(extractedBuffer, isForHover);
       if (!processedBuffer) {
         return null;
       }
@@ -101,12 +108,12 @@ export class ImageProcessor {
 
       return vscode.Uri.file(cachePath);
     } catch (error) {
-      console.error(`Помилка обробки зображення ${pngPath}:`, error);
+      console.error(vscode.l10n.t('imageProcessor.imageProcessingError', pngPath), error);
       return null;
     }
   }
 
-  private async trimAndOptimizeImage(buffer: Buffer): Promise<Buffer | null> {
+  private async trimAndOptimizeImage(buffer: Buffer, isForHover: boolean): Promise<Buffer | null> {
     try {
       const image = sharp(buffer);
 
@@ -115,7 +122,7 @@ export class ImageProcessor {
         .toBuffer({ resolveWithObject: true });
 
       if (info.channels < 4) {
-        return await this.scaleToMaxHeight(buffer);
+        return await this.scaleImage(buffer, isForHover);
       }
 
       const bounds = this.findNonTransparentBounds(
@@ -139,14 +146,59 @@ export class ImageProcessor {
         .png()
         .toBuffer();
 
-      if (bounds.height > this.MAX_HEIGHT) {
-        return await this.scaleToMaxHeight(trimmedBuffer);
+      return await this.scaleImage(trimmedBuffer, isForHover);
+    } catch (error) {
+      console.error(vscode.l10n.t('imageProcessor.imageTrimError'), error);
+      return await this.scaleImage(buffer, isForHover);
+    }
+  }
+
+  private async scaleImage(buffer: Buffer, isForHover: boolean): Promise<Buffer> {
+    try {
+      const image = sharp(buffer);
+      const metadata = await image.metadata();
+
+      if (!metadata.width || !metadata.height) {
+        return buffer;
       }
 
-      return trimmedBuffer;
+      let targetHeight: number;
+      let targetWidth: number;
+
+      if (isForHover) {
+        if (Math.max(metadata.width, metadata.height) < this.HOVER_MIN_SIZE) {
+          const scale = Math.ceil(this.HOVER_MIN_SIZE / Math.max(metadata.width, metadata.height));
+          targetWidth = metadata.width * scale;
+          targetHeight = metadata.height * scale;
+        } else if (Math.max(metadata.width, metadata.height) > this.HOVER_MAX_SIZE) {
+          const scale = this.HOVER_MAX_SIZE / Math.max(metadata.width, metadata.height);
+          targetWidth = Math.floor(metadata.width * scale);
+          targetHeight = Math.floor(metadata.height * scale);
+        } else {
+          return buffer;
+        }
+      } else {
+        if (metadata.height <= this.MAX_HEIGHT) {
+          return buffer;
+        }
+        const aspectRatio = metadata.width / metadata.height;
+        targetHeight = this.MAX_HEIGHT;
+        targetWidth = Math.round(this.MAX_HEIGHT * aspectRatio);
+      }
+
+      return await image
+        .resize(targetWidth, targetHeight, {
+          kernel: sharp.kernel.nearest,
+          fit: "fill",
+        })
+        .png({
+          compressionLevel: 0,
+          palette: false,
+        })
+        .toBuffer();
     } catch (error) {
-      console.error("Помилка обрізання зображення:", error);
-      return await this.scaleToMaxHeight(buffer);
+      console.error(vscode.l10n.t('imageProcessor.imageScalingError'), error);
+      return buffer;
     }
   }
 
@@ -195,35 +247,7 @@ export class ImageProcessor {
   }
 
   private async scaleToMaxHeight(buffer: Buffer): Promise<Buffer> {
-    try {
-      const image = sharp(buffer);
-      const metadata = await image.metadata();
-
-      if (!metadata.width || !metadata.height) {
-        return buffer;
-      }
-
-      if (metadata.height <= this.MAX_HEIGHT) {
-        return buffer;
-      }
-
-      const aspectRatio = metadata.width / metadata.height;
-      const newWidth = Math.round(this.MAX_HEIGHT * aspectRatio);
-
-      return await image
-        .resize(newWidth, this.MAX_HEIGHT, {
-          kernel: sharp.kernel.lanczos3,
-          fit: "fill",
-        })
-        .png({
-          compressionLevel: 6,
-          palette: true,
-        })
-        .toBuffer();
-    } catch (error) {
-      console.error("Помилка масштабування зображення:", error);
-      return buffer;
-    }
+    return this.scaleImage(buffer, false);
   }
 
   private async isImageTransparent(buffer: Buffer): Promise<boolean> {
@@ -246,7 +270,7 @@ export class ImageProcessor {
 
       return true;
     } catch (error) {
-      console.error("Помилка перевірки прозорості:", error);
+      console.error(vscode.l10n.t('imageProcessor.transparencyCheckError'), error);
       return false;
     }
   }
@@ -265,7 +289,7 @@ export class ImageProcessor {
         }
       }
     } catch (error) {
-      console.error("Помилка очищення кешу:", error);
+      console.error(vscode.l10n.t('imageProcessor.cacheClearError'), error);
     }
   }
 

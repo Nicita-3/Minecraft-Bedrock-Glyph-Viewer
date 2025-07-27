@@ -49,7 +49,7 @@ export class EmojiPicker {
 
       this.panel = vscode.window.createWebviewPanel(
         "emojiPicker",
-        "Emoji Picker",
+        vscode.l10n.t('emojiPicker.title'),
         vscode.ViewColumn.Beside,
         {
           enableScripts: true,
@@ -88,8 +88,13 @@ export class EmojiPicker {
                 break;
             }
           } catch (error) {
-            console.error("EmojiPicker: Помилка обробки повідомлення:", error);
-            vscode.window.showErrorMessage(`Помилка: ${error}`);
+            console.error("EmojiPicker: Error processing message:", error);
+            vscode.window.showErrorMessage(
+              vscode.l10n.t(
+                'emojiPicker.error.processing',
+                error instanceof Error ? error.message : String(error)
+              )
+            );
           }
         },
         undefined,
@@ -100,9 +105,12 @@ export class EmojiPicker {
         this.panel = undefined;
       });
     } catch (error) {
-      console.error("EmojiPicker: Помилка показу picker-а:", error);
+      console.error("EmojiPicker: Error showing picker:", error);
       vscode.window.showErrorMessage(
-        `Помилка відкриття Emoji Picker: ${error}`
+        vscode.l10n.t(
+          'emojiPicker.error.opening',
+          (error instanceof Error ? error.message : String(error))
+        )
       );
     }
   }
@@ -112,11 +120,11 @@ export class EmojiPicker {
       await this.loadFontPages();
       await this.updatePageContent();
     } catch (error) {
-      console.error("EmojiPicker: Помилка завантаження даних:", error);
+      console.error("EmojiPicker: Error loading data:", error);
       if (this.panel) {
         this.panel.webview.postMessage({
           command: "error",
-          message: `Помилка завантаження: ${error}`,
+          message: vscode.l10n.t('emojiPicker.error.loading', error instanceof Error ? error.message : String(error)),
         });
       }
     }
@@ -151,7 +159,7 @@ export class EmojiPicker {
               });
             }
           } catch (error) {
-            console.error(`EmojiPicker: Помилка обробки ${filename}:`, error);
+            console.error(`EmojiPicker: Error processing ${filename}:`, error);
           }
         }
       }
@@ -181,7 +189,7 @@ export class EmojiPicker {
               }
             } catch (error) {
               console.error(
-                `EmojiPicker: Помилка читання папки font ${fullPath}:`,
+                `EmojiPicker: Error reading font folder ${fullPath}:`,
                 error
               );
             }
@@ -197,7 +205,7 @@ export class EmojiPicker {
         }
       }
     } catch (error) {
-      console.error(`EmojiPicker: Помилка читання директорії ${dir}:`, error);
+      console.error(`EmojiPicker: Error reading directory ${dir}:`, error);
     }
 
     return result;
@@ -211,7 +219,7 @@ export class EmojiPicker {
 
     try {
       if (!fs.existsSync(filePath)) {
-        console.error(`EmojiPicker: Файл не існує: ${filePath}`);
+        console.error(`EmojiPicker: File does not exist: ${filePath}`);
         return emojis;
       }
 
@@ -220,7 +228,7 @@ export class EmojiPicker {
 
       if (!metadata.width || !metadata.height) {
         console.error(
-          `EmojiPicker: Не вдалося отримати розміри зображення: ${filePath}`
+          `EmojiPicker: Could not get image dimensions: ${filePath}`
         );
         return emojis;
       }
@@ -275,7 +283,7 @@ export class EmojiPicker {
         }
       }
     } catch (error) {
-      console.error(`EmojiPicker: Помилка обробки файлу ${filePath}:`, error);
+      console.error(`EmojiPicker: Error processing file ${filePath}:`, error);
     }
     return emojis;
   }
@@ -293,25 +301,33 @@ export class EmojiPicker {
       const left = col * cellWidth;
       const top = row * cellHeight;
       const outputPath = path.join(outputDir, `${codeHex}.png`);
+      
+      const baseSize = Math.max(cellWidth, cellHeight);
+      const targetSize = Math.max(64, baseSize * 4);
+      
       await image
         .clone()
         .extract({ left, top, width: cellWidth, height: cellHeight })
-        .resize(32, 32, {
+        .resize(targetSize, targetSize, {
           kernel: sharp.kernel.nearest,
+          fit: 'contain',
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
         })
-        .png()
+        .png({
+          compressionLevel: 0,
+          palette: false
+        })
         .toFile(outputPath);
 
       if (fs.existsSync(outputPath)) {
-        const stats = fs.statSync(outputPath);
         return outputPath;
       } else {
-        console.error(`EmojiPicker: Файл не створився: ${outputPath}`);
+        console.error(`EmojiPicker: File was not created: ${outputPath}`);
         return null;
       }
     } catch (error) {
       console.error(
-        `EmojiPicker: Помилка створення зображення емодзі ${codeHex}:`,
+        `EmojiPicker: Error creating emoji image ${codeHex}:`,
         error
       );
       return null;
@@ -350,18 +366,18 @@ export class EmojiPicker {
 
       return false;
     } catch (error) {
-      console.error("Помилка в isCellValid:", error);
+      console.error("Error in isCellValid:", error);
       return false;
     }
   }
 
   private getWebviewContent(): string {
     return `<!DOCTYPE html>
-        <html lang="uk">
+        <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Emoji Picker</title>
+            <title>${vscode.l10n.t('emojiPicker.title')}</title>
             <style>
                 body {
                     font-family: var(--vscode-font-family);
@@ -423,7 +439,7 @@ export class EmojiPicker {
                 
                 .emoji-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(var(--emoji-size, 70px), 1fr));
+                    grid-template-columns: repeat(auto-fill, minmax(var(--emoji-size, 80px), 1fr));
                     gap: 8px;
                     max-height: 500px;
                     overflow-y: auto;
@@ -436,13 +452,13 @@ export class EmojiPicker {
                     cursor: pointer;
                     background-color: var(--vscode-button-secondaryBackground);
                     transition: all 0.2s;
-                    min-height: var(--emoji-size, 70px);
+                    min-height: var(--emoji-size, 80px);
                     display: flex;
                     flex-direction: column;
                     justify-content: space-between;
                     align-items: center;
                     position: relative;
-                    padding: 2px;
+                    padding: 4px;
                 }
                 
                 .emoji-item:hover {
@@ -464,15 +480,32 @@ export class EmojiPicker {
                 }
                 
                 .emoji-image {
-                    max-width: calc(var(--emoji-size, 70px) * 0.85);
-                    max-height: calc(var(--emoji-size, 70px) * 0.75);
-                    width: calc(var(--emoji-size, 70px) * 0.75);
-                    height: calc(var(--emoji-size, 70px) * 0.75);
-                    image-rendering: pixelated;
+                    max-width: calc(var(--emoji-size, 80px) * 0.85);
+                    max-height: calc(var(--emoji-size, 80px) * 0.75);
+                    width: auto;
+                    height: auto;
+                    /* Critical CSS for pixel art preservation */
                     image-rendering: -moz-crisp-edges;
+                    image-rendering: -webkit-crisp-edges;
+                    image-rendering: pixelated;
                     image-rendering: crisp-edges;
+                    -ms-interpolation-mode: nearest-neighbor;
+                    /* Prevent smoothing in different browsers */
+                    -webkit-font-smoothing: never;
+                    -moz-osx-font-smoothing: unset;
                     object-fit: contain;
                     display: block;
+                    /* Ensure sharp scaling */
+                    transform-origin: center;
+                }
+                
+                /* Fallback for older browsers */
+                @supports not (image-rendering: pixelated) {
+                    .emoji-image {
+                        image-rendering: -moz-crisp-edges;
+                        image-rendering: -webkit-optimize-contrast;
+                        -ms-interpolation-mode: nearest-neighbor;
+                    }
                 }
                 
                 .emoji-image.broken {
@@ -480,13 +513,17 @@ export class EmojiPicker {
                 }
                 
                 .emoji-char {
-                    font-size: calc(var(--emoji-size, 70px) * 0.3);
+                    font-size: calc(var(--emoji-size, 80px) * 0.3);
                     line-height: 1;
                     display: none;
                     flex: 1;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    /* Apply same rendering to fallback text */
+                    text-rendering: optimizeSpeed;
+                    font-smooth: never;
+                    -webkit-font-smoothing: none;
                 }
                 
                 .emoji-char.fallback {
@@ -494,7 +531,7 @@ export class EmojiPicker {
                 }
                 
                 .emoji-code {
-                    font-size: calc(var(--emoji-size, 70px) * 0.09);
+                    font-size: calc(var(--emoji-size, 80px) * 0.09);
                     color: var(--vscode-descriptionForeground);
                     font-family: var(--vscode-editor-font-family);
                     word-break: break-all;
@@ -549,35 +586,44 @@ export class EmojiPicker {
                     border: 1px solid var(--vscode-inputValidation-errorBorder);
                     border-radius: 4px;
                 }
+
+                /* High DPI / Retina display optimizations */
+                @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+                    .emoji-image {
+                        /* Force hardware acceleration for better pixel rendering */
+                        transform: translateZ(0);
+                        will-change: transform;
+                    }
+                }
             </style>
         </head>
         <body>
             <div class="header">
-                <h2>Emoji Picker</h2>
+                <h2>${vscode.l10n.t('emojiPicker.title')}</h2>
                 <div class="controls">
                     <div class="page-selector">
-                        <label for="pageSelect">Сторінка шрифту: </label>
+                        <label for="pageSelect">${vscode.l10n.t('emojiPicker.fontPage')}: </label>
                         <select id="pageSelect">
-                            <option value="">Завантаження...</option>
+                            <option value="">${vscode.l10n.t('emojiPicker.loading')}...</option>
                         </select>
                     </div>
                     <div class="scale-controls">
-                        <label for="scaleRange">Масштаб: </label>
+                        <label for="scaleRange">${vscode.l10n.t('emojiPicker.scale')}: </label>
                         <input type="range" id="scaleRange" min="50" max="200" value="100" step="10">
                         <span id="scaleValue">100%</span>
                     </div>
                 </div>
-                <div class="page-info" id="pageInfo">Завантаження даних...</div>
+                <div class="page-info" id="pageInfo">${vscode.l10n.t('emojiPicker.loadingData')}...</div>
             </div>
             
             <div class="emoji-grid" id="emojiGrid">
-                <div class="loading">Завантаження емодзі...</div>
+                <div class="loading">${vscode.l10n.t('emojiPicker.loadingEmojis')}...</div>
             </div>
             
             <div class="context-menu" id="contextMenu">
-                <div class="context-menu-item" data-action="insert">Вставити символ</div>
-                <div class="context-menu-item" data-action="copy-unicode">Копіювати Unicode</div>
-                <div class="context-menu-item" data-action="copy-code">Копіювати код (0xExxx)</div>
+                <div class="context-menu-item" data-action="insert">${vscode.l10n.t('emojiPicker.context.insert')}</div>
+                <div class="context-menu-item" data-action="copy-unicode">${vscode.l10n.t('emojiPicker.context.copyUnicode')}</div>
+                <div class="context-menu-item" data-action="copy-code">${vscode.l10n.t('emojiPicker.context.copyCode')}</div>
             </div>
             
             <script>
@@ -592,14 +638,14 @@ export class EmojiPicker {
                     const scale = e.target.value;
                     document.getElementById('scaleValue').textContent = scale + '%';
                     
-                    const size = Math.round(70 * scale / 100);
+                    const size = Math.round(80 * scale / 100);
                     document.documentElement.style.setProperty('--emoji-size', size + 'px');
                 });
                 
                 document.getElementById('pageSelect').addEventListener('change', (e) => {
                     const pageIndex = parseInt(e.target.value);
                     if (!isNaN(pageIndex)) {
-                        currentPageIndex = pageIndex; // Зберігаємо поточну сторінку
+                        currentPageIndex = pageIndex;
                         vscode.postMessage({
                             command: 'changePage',
                             page: pageIndex
@@ -662,7 +708,7 @@ export class EmojiPicker {
                     if (pages.length === 0) {
                         const option = document.createElement('option');
                         option.value = '';
-                        option.textContent = 'Не знайдено font файлів';
+                        option.textContent = '${vscode.l10n.t('emojiPicker.noFontFiles')}';
                         select.appendChild(option);
                         return;
                     }
@@ -670,7 +716,7 @@ export class EmojiPicker {
                     pages.forEach((page, index) => {
                         const option = document.createElement('option');
                         option.value = index;
-                        option.textContent = \`glyph_E\${page.prefix}.png (\${page.emojis.length} емодзі)\`;
+                        option.textContent = \`glyph_E\${page.prefix}.png (\${page.emojis.length} ${vscode.l10n.t('emojiPicker.emojis')})\`;
                         select.appendChild(option);
                     });
                     
@@ -686,7 +732,7 @@ export class EmojiPicker {
                     info.textContent = pageInfo;
                     
                     if (emojis.length === 0) {
-                        grid.innerHTML = '<div class="no-emojis">Емодзі не знайдено на цій сторінці</div>';
+                        grid.innerHTML = '<div class="no-emojis">${vscode.l10n.t('emojiPicker.noEmojisFound')}</div>';
                         return;
                     }
                     
@@ -714,19 +760,19 @@ export class EmojiPicker {
                             img.alt = emoji.code;
                             
                             img.onerror = function() {
-                                console.error('Не вдалося завантажити зображення для', emoji.code, 'URL:', emoji.imageUri);
+                                console.error('Failed to load image for', emoji.code, 'URL:', emoji.imageUri);
                                 this.classList.add('broken');
-                                charDiv.classList.add('fallback'); // Показуємо Unicode символ як fallback
-                                imageContainer.appendChild(charDiv); // Переносимо символ в контейнер
+                                charDiv.classList.add('fallback');
+                                imageContainer.appendChild(charDiv);
                             };
                             
                             img.onload = function() {
-                                charDiv.classList.remove('fallback'); // Ховаємо Unicode символ
+                                charDiv.classList.remove('fallback');
                             };
                             
                             imageContainer.appendChild(img);
                         } else {
-                            console.warn('Немає зображення для', emoji.code);
+                            console.warn('No image for', emoji.code);
                             charDiv.classList.add('fallback');
                             imageContainer.appendChild(charDiv);
                         }
@@ -757,12 +803,12 @@ export class EmojiPicker {
                 }
                 
                 function showError(message) {
-                    console.error('Помилка:', message);
+                    console.error('Error:', message);
                     const grid = document.getElementById('emojiGrid');
-                    grid.innerHTML = \`<div class="error">Помилка: \${message}</div>\`;
+                    grid.innerHTML = \`<div class="error">${vscode.l10n.t('emojiPicker.error')}: \${message}</div>\`;
                     
                     const info = document.getElementById('pageInfo');
-                    info.textContent = 'Помилка завантаження даних';
+                    info.textContent = '${vscode.l10n.t('emojiPicker.errorLoadingData')}';
                 }
             </script>
         </body>
@@ -780,8 +826,7 @@ export class EmojiPicker {
         this.panel.webview.postMessage({
           command: "updatePageContent",
           emojis: [],
-          pageInfo:
-            'Не знайдено font файлів у проекті. Переконайтеся, що у вас є папка "font" з файлами glyph_Ex.png',
+          pageInfo: vscode.l10n.t('emojiPicker.noFontFilesInProject'),
         });
       }
       return;
@@ -812,11 +857,11 @@ export class EmojiPicker {
             ? this.panel!.webview.asWebviewUri(emoji.imageUri).toString()
             : null,
         })),
-        pageInfo: `Сторінка ${this.currentPage + 1} з ${
-          this.fontPages.length
-        } • ${currentPageData.filename} • ${
-          currentPageData.emojis.length
-        } емодзі`,
+        pageInfo: vscode.l10n.t('emojiPicker.pageInfo', 
+          this.currentPage + 1, 
+          this.fontPages.length, 
+          currentPageData.filename, 
+          currentPageData.emojis.length),
       });
     }
   }
@@ -832,20 +877,20 @@ export class EmojiPicker {
       });
 
       if (success) {
-        vscode.window.showInformationMessage(`Вставлено: ${unicode}`);
+        vscode.window.showInformationMessage(vscode.l10n.t('emojiPicker.inserted', unicode));
       } else {
-        vscode.window.showErrorMessage("Не вдалося вставити емодзі");
-        console.error("EmojiPicker: Помилка вставки емодзі");
+        vscode.window.showErrorMessage(vscode.l10n.t('emojiPicker.error.insert'));
+        console.error("EmojiPicker: Error inserting emoji");
       }
     } else {
-      vscode.window.showErrorMessage("Немає активного редактора");
-      console.error("EmojiPicker: Немає активного редактора для вставки");
+      vscode.window.showErrorMessage(vscode.l10n.t('emojiPicker.error.noActiveEditor'));
+      console.error("EmojiPicker: No active editor for insertion");
     }
   }
 
   private async copyToClipboard(text: string) {
     await vscode.env.clipboard.writeText(text);
-    vscode.window.showInformationMessage(`Скопійовано: ${text}`);
+    vscode.window.showInformationMessage(vscode.l10n.t('emojiPicker.copied', text));
   }
 
   dispose() {

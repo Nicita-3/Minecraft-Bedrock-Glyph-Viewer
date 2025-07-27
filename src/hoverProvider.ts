@@ -35,14 +35,14 @@ export class FontCodeHoverProvider implements vscode.HoverProvider {
       }
 
       const markdown = new vscode.MarkdownString();
-      markdown.appendMarkdown(`**Font Code:** \`${fontCode}\`\n\n`);
+      markdown.appendMarkdown(`**${vscode.l10n.t('hover.fontCode')}:** \`${fontCode}\`\n\n`);
       markdown.appendMarkdown(`![Glyph](${imageUri.toString()})\n\n`);
 
       try {
         const codePoint = parseInt(fontCode, 16);
         const unicodeChar = String.fromCharCode(codePoint);
         markdown.appendMarkdown(
-          `**Unicode:** \`${unicodeChar}\` (${codePoint})`
+          `**${vscode.l10n.t('hover.unicode')}:** \`${unicodeChar}\` (${codePoint})`
         );
       } catch (error) {}
 
@@ -50,7 +50,7 @@ export class FontCodeHoverProvider implements vscode.HoverProvider {
 
       return new vscode.Hover(markdown, range);
     } catch (error) {
-      console.error(`Помилка hover для ${fontCode}:`, error);
+      console.error(`Hover error for ${fontCode}:`, error);
       return null;
     }
   }
