@@ -1,5 +1,5 @@
 {
-  "extension.displayName": "Просмотр глифов Minecraft Bedrock",
+  "extension.displayName": "Minecraft Bedrock Glyph Viewer",
   "extension.description": "Отображает Unicode-символы как изображения из шрифта и преобразует их",
   "command.convertToUnicode.title": "Преобразовать код шрифта в Unicode",
   "command.showEmojiPicker.title": "Открыть панель эмодзи",
